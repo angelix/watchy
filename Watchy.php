@@ -26,6 +26,15 @@
 	- q -> query
 	- s -> sanitize
 	
+	Settings:
+		- name -> The name of the Project Watchy is watching.
+		- $emails -> Email or array of emails notifications will be send to
+		- from_email -> The from email address , eg 'OgilvyLabs <ogilvit@gmail.com>'
+		- dispatch -> Where to keep the log , default to both database and email
+		- log_queries -> if you want to log the db queries , deufalt to false
+		- auto_sanitize -> if you want to auto sanitize the sql parameters , default to true
+	
+	
 	USAGE:
 	
 	include 'watchy.php';
@@ -97,8 +106,6 @@ class Watchy{
 			$this->email($alert);
 		}
 	}
-	
-	
 	
 	public function query(){
 		if(func_num_args() > 1){
