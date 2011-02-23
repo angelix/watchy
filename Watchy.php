@@ -8,12 +8,24 @@
 	SQL SCHEMA
 	
 	CREATE TABLE IF NOT EXISTS `watchy` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `log` text CHARACTER SET utf8 NOT NULL,
-  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+		`id` int(11) NOT NULL AUTO_INCREMENT,
+		`log` text CHARACTER SET utf8 NOT NULL,
+		`created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+		PRIMARY KEY (`id`)
+	) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
+
+	Methods:
+	
+	- log
+	- alert
+	- query
+	- sanitize
+	
+	Alias:
+	- q -> query
+	- s -> sanitize
+	
 	USAGE:
 	
 	include 'watchy.php';
@@ -23,6 +35,9 @@
 	$sql = "SELECT * FROM watchy";
 
 	$result = $w->query($sql);
+	
+	$sql = "SELECT * FROM watchy WHERE id = '%d'";
+	$result = $w->query($sql , 4);
 
 	$w->log('test');
 	$w->log($result);
@@ -40,6 +55,22 @@ class Watchy{
 	protected $dispatch;
 	protected $log_queries;
 	protected $from_email;
+	protected $auto_sanitize;
+	protected $queries = NULL;
+	
+	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $dispatch = WATCHY_BOTH , $log_queries = false , $auto_sanitize = true){
+		$this->project = $name;
+		$this->dispatch = $dispatch;
+		$this->log_queries = $log_queries;
+		$this->from_email = $from_email;
+		$this->auto_sanitize = $auto_sanitize;
+		
+		if(is_array($emails)){
+			$this->emails = $emails;
+		}else{
+			$this->emails = array($emails);
+		}
+	}
 	
 	public function log($log){
 		if($this->dispatch == WATCHY_DATABASE || $this->dispatch == WATCHY_BOTH){
@@ -67,14 +98,21 @@ class Watchy{
 		}
 	}
 	
-	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $dispatch = WATCHY_BOTH , $log_queries = false){
-		$this->project = $name;
-		$this->dispatch = $dispatch;
-		$this->emails = $emails;
-		$this->log_queries = $log_queries;
-	}
 	
-	public function query($sql){
+	
+	public function query(){
+		if(func_num_args() > 1){
+			$args = func_get_args();
+			if($this->auto_sanitize){
+				for($i = 1 ; $i < count($args) ; $i++){ //sanitize only the parameters, not the sql query
+					$args[$i] = $this->sanitize($args[$i]);
+				}
+			}
+			$sql = call_user_func_array('sprintf' , $args);
+		}else{
+			$sql = func_get_arg(0);
+		}
+		
 		if($this->log_queries){
 			$this->queries .= '<br />'.$sql;
 		}
@@ -86,8 +124,9 @@ class Watchy{
 		return $result;
 	}
 	
-	public function q($sql){
-		return $this->query($sql);
+	public function q(){
+		return call_user_func_array(array($this, 'query') , func_get_args());
+
 	}
 	
 	public function sanitize($value){
@@ -102,7 +141,7 @@ class Watchy{
 		$headers = "MIME-Version: 1.0\n";
 		$headers .= "Content-type: text/html; charset=utf-8\n";
 		$headers .= "X-mailer: php\n"; 
-		$headers .= "From: ".$from_email."\n";
+		$headers .= "From: ".$this->from_email."\n";
 		$subject = 'Watchy - '.$this->project.' - '.date('l jS \of F Y h:i:s A');
 		
 		foreach($this->emails as $email){
@@ -112,7 +151,9 @@ class Watchy{
 		
 	function __destruct(){
 		if($this->log_queries){
-			$this->email($this->queries);
+			if($this->queries != NULL){
+				$this->log($this->queries);
+			}
 		}
 	}
 
