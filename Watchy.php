@@ -1,5 +1,4 @@
-<?php
-defined('ACCESS') or die('No direct script access.');
+<?php 
 /*
 
 	A Basic Watchdog for PHP Development.
@@ -36,15 +35,17 @@ define('WATCHY_DATABASE', 2);
 
 class Watchy{
 		
-	protected $project = 'Watchy';
-	protected $emails = array();
-	protected $dispatch = WATCHY_BOTH;
-	protected $log_queries = 0;
+	protected $project;
+	protected $emails;
+	protected $dispatch;
+	protected $log_queries;
+	protected $from_email;
 	
 	public function log($log){
 		if($this->dispatch == WATCHY_DATABASE || $this->dispatch == WATCHY_BOTH){
 			$sql = sprintf("INSERT INTO watchy (id , log , created ) VALUES ( NULL, '%s' , CURRENT_TIMESTAMP);", @mysql_real_escape_string(print_r($log,TRUE)));
 			$result = @mysql_query($sql);
+
 			if(!$result){
 				$this->email(var_export($log,TRUE)."<br /><br />".mysql_error());
 			}
@@ -66,9 +67,11 @@ class Watchy{
 		}
 	}
 	
-	function __construct($name , $dispatch = WATCHY_BOTH){
+	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $dispatch = WATCHY_BOTH , $log_queries = false){
 		$this->project = $name;
 		$this->dispatch = $dispatch;
+		$this->emails = $emails;
+		$this->log_queries = $log_queries;
 	}
 	
 	public function query($sql){
@@ -76,7 +79,7 @@ class Watchy{
 			$this->queries .= '<br />'.$sql;
 		}
 		
-		$result = mysql_query($sql);
+		$result = @mysql_query($sql);
 		if (!$result){
 			$this->log(mysql_error()." \n ".$sql);
 		}
@@ -87,15 +90,24 @@ class Watchy{
 		return $this->query($sql);
 	}
 	
+	public function sanitize($value){
+		return mysql_real_escape_string($value);
+	}
+	
+	public function s($value){
+		return $this->sanitize($value);
+	}
+	
 	public function email($content){
 		$headers = "MIME-Version: 1.0\n";
 		$headers .= "Content-type: text/html; charset=utf-8\n";
 		$headers .= "X-mailer: php\n"; 
-		$headers .= "From: OgilvyLabs <ogilvit@gmail.com>\n";
+		$headers .= "From: ".$from_email."\n";
 		$subject = 'Watchy - '.$this->project.' - '.date('l jS \of F Y h:i:s A');
-
-		$to = 'angelix+watchy@vegle.gr';
-		@mail($to,$subject,$content,$headers);
+		
+		foreach($this->emails as $email){
+			@mail($email , $subject , $content , $headers);
+		}
 	}
 		
 	function __destruct(){
