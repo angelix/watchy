@@ -1,4 +1,4 @@
-<?php 
+<?php define('WATCHY_VERSION', '1.0 Beta 1');
 /*
 
 	A Basic Watchdog for PHP Development.
