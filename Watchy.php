@@ -132,8 +132,8 @@ class Watchy{
 	}
 	
 	public function q(){
-		return call_user_func_array(array($this, 'query') , func_get_args());
-
+		$args = func_get_args();
+		return call_user_func_array(array($this, 'query') , $args);
 	}
 	
 	public function sanitize($value){
