@@ -66,13 +66,17 @@ class Watchy{
 	protected $from_email;
 	protected $auto_sanitize;
 	protected $queries = NULL;
+	protected $email_content = '';
+	protected $flood = 0;
+	protected $flood_control = 0;
 	
-	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $dispatch = WATCHY_BOTH , $log_queries = false , $auto_sanitize = true){
+	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $dispatch = WATCHY_BOTH , $log_queries = false , $auto_sanitize = true , $flood_control = 10){
 		$this->project = $name;
 		$this->dispatch = $dispatch;
 		$this->log_queries = $log_queries;
 		$this->from_email = $from_email;
 		$this->auto_sanitize = $auto_sanitize;
+		$this->flood_control = $flood_control;
 		
 		if(is_array($emails)){
 			$this->emails = $emails;
@@ -126,7 +130,7 @@ class Watchy{
 		
 		$result = @mysql_query($sql);
 		if (!$result){
-			$this->log(mysql_error()." \n ".$sql);
+			$this->log('Error: '.mysql_error()." <br />SQL: ".$sql);
 		}
 		return $result;
 	}
@@ -145,11 +149,23 @@ class Watchy{
 	}
 	
 	public function email($content){
+		if($this->flood_control == 0 || $this->flood < $this->flood_control){
+			$this->email_content .= $content;
+			$this->email_content .= "<br /><br />-----------------------------------------------------------------------------------------------------------------------------<br /><br />";
+			$this->flood++;
+		}
+	}
+	
+	public function send_email($content = NULL){
 		$headers = "MIME-Version: 1.0\n";
 		$headers .= "Content-type: text/html; charset=utf-8\n";
 		$headers .= "X-mailer: php\n"; 
 		$headers .= "From: ".$this->from_email."\n";
 		$subject = 'Watchy - '.$this->project.' - '.date('l jS \of F Y h:i:s A');
+		
+		if($content == NULL){
+			$content = $this->email_content;
+		}
 		
 		foreach($this->emails as $email){
 			@mail($email , $subject , $content , $headers);
@@ -161,6 +177,10 @@ class Watchy{
 			if($this->queries != NULL){
 				$this->log($this->queries);
 			}
+		}
+		
+		if($this->email_content != ''){
+			$this->send_email();
 		}
 	}
 
