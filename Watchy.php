@@ -1,4 +1,4 @@
-<?php define('WATCHY_VERSION', '1.0 Beta 2');
+<?php define('WATCHY_VERSION', '1.0 Beta 3');
 /*
 
 	A Basic Watchdog for PHP Development.
@@ -54,7 +54,7 @@
 	PRECAUTIONS:
 		Make sure PHP is running with Magic Quotes turned off.
 		
-		To do this add the following line to .htaccess. In case Magic Quotes is On Watchy will try to auto revert the automatic process of Magic Quotes
+		To do this add the following line to .htaccess. In case Magic Quotes is On, Watchy will try to auto revert the automatic process of Magic Quotes
 		php_flag magic_quotes_gpc Off
 */
 
@@ -110,6 +110,7 @@ class Watchy{
 	public function log($log){
 		if($this->dispatch == WATCHY_DATABASE || $this->dispatch == WATCHY_BOTH){
 			$sql = sprintf("INSERT INTO watchy (id , log , created ) VALUES ( NULL, '%s' , CURRENT_TIMESTAMP);", @mysql_real_escape_string(print_r($log,TRUE)));
+			
 			$result = @mysql_query($sql);
 
 			if(!$result){
@@ -150,9 +151,14 @@ class Watchy{
 			$this->queries .= '<br />'.$sql;
 		}
 		
-		$result = @mysql_query($sql);
+		$result = mysql_query($sql);
+		
 		if (!$result){
-			$this->log('Error: '.mysql_error()." <br />SQL: ".$sql);
+			$mysql_error = mysql_error();
+			$this->log('Error: '.$mysql_error." <br />SQL: ".$sql);
+			if(ini_get('display_errors') == 'On'){
+				echo '<b>SQL Error:</b> '.$mysql_error.'<br />';
+			}
 		}
 		return $result;
 	}
