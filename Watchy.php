@@ -1,4 +1,4 @@
-<?php define('WATCHY_VERSION', '1.0 Beta 1');
+<?php define('WATCHY_VERSION', '1.0 Beta 2');
 /*
 
 	A Basic Watchdog for PHP Development.
@@ -51,11 +51,33 @@
 	$w->log('test');
 	$w->log($result);
 
+	PRECAUTIONS:
+		Make sure PHP is running with Magic Quotes turned off.
+		
+		To do this add the following line to .htaccess. In case Magic Quotes is On Watchy will try to auto revert the automatic process of Magic Quotes
+		php_flag magic_quotes_gpc Off
 */
 
 define('WATCHY_BOTH', 0);
 define('WATCHY_EMAIL', 1);
 define('WATCHY_DATABASE', 2);
+
+// In case magic_quotes is ON.
+if (get_magic_quotes_gpc()) {
+	$process = array(&$_GET, &$_POST, &$_COOKIE, &$_REQUEST);
+	while (list($key, $val) = each($process)) {
+		foreach ($val as $k => $v) {
+			unset($process[$key][$k]);
+			if (is_array($v)) {
+				$process[$key][stripslashes($k)] = $v;
+				$process[] = &$process[$key][stripslashes($k)];
+			} else {
+				$process[$key][stripslashes($k)] = stripslashes($v);
+			}
+		}
+	}
+	unset($process);
+}
 
 class Watchy{
 		
