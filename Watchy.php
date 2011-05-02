@@ -1,4 +1,4 @@
-<?php define('WATCHY_VERSION', '1.0 Beta 3');
+<?php define('WATCHY_VERSION', '1.0 Beta 4');
 /*
 
 	A Basic Watchdog for PHP Development.
@@ -91,6 +91,7 @@ class Watchy{
 	protected $email_content = '';
 	protected $flood = 0;
 	protected $flood_control = 0;
+	protected $last_query = '';
 	
 	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $dispatch = WATCHY_BOTH , $log_queries = false , $auto_sanitize = true , $flood_control = 10){
 		$this->project = $name;
@@ -151,6 +152,7 @@ class Watchy{
 			$this->queries .= '<br />'.$sql;
 		}
 		
+		$this->last_query = $sql;
 		$result = mysql_query($sql);
 		
 		if (!$result){
@@ -182,6 +184,10 @@ class Watchy{
 			$this->email_content .= "<br /><br />-----------------------------------------------------------------------------------------------------------------------------<br /><br />";
 			$this->flood++;
 		}
+	}
+	
+	public function get_last_query(){
+		return $this->last_query;
 	}
 	
 	public function send_email($content = NULL){
