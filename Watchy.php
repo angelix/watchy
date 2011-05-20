@@ -1,4 +1,4 @@
-<?php define('WATCHY_VERSION', '1.0 Beta 4');
+<?php define('WATCHY_VERSION', '1.0 Beta 5');
 /*
 
 	A Basic Watchdog for PHP Development.
@@ -188,6 +188,14 @@ class Watchy{
 	
 	public function get_last_query(){
 		return $this->last_query;
+	}
+
+	public function sanitize_disable(){
+		$this->auto_sanitize = false;
+	}
+	
+	public function sanitize_enable(){
+		$this->auto_sanitize = true;
 	}
 	
 	public function send_email($content = NULL){
