@@ -180,8 +180,8 @@ class Watchy{
 	
 	public function email($content){
 		if($this->flood_control == 0 || $this->flood < $this->flood_control){
-			$this->email_content .= $content;
-			$this->email_content .= "<br /><br />-----------------------------------------------------------------------------------------------------------------------------<br /><br />";
+			$this->email_content .= '<pre>'.$content.'</pre>';
+			$this->email_content .= "<br /><br /><hr /><br /><br />";
 			$this->flood++;
 		}
 	}
