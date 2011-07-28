@@ -1,4 +1,4 @@
-<?php define('WATCHY_VERSION', '1.0 Beta 6');
+<?php define('WATCHY_VERSION', '1.9 Dev 1');
 /*
 
 	A Basic Watchdog for PHP Development.
@@ -92,14 +92,28 @@ class Watchy{
 	protected $flood = 0;
 	protected $flood_control = 0;
 	protected $last_query = '';
+	protected $error_handler = true;
+	protected $destroy = false;
 	
-	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $dispatch = WATCHY_BOTH , $log_queries = false , $auto_sanitize = true , $flood_control = 10){
+	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $error_handler = true, $dispatch = WATCHY_BOTH , $log_queries = false , $auto_sanitize = true , $flood_control = 10){
 		$this->project = $name;
 		$this->dispatch = $dispatch;
 		$this->log_queries = $log_queries;
 		$this->from_email = $from_email;
 		$this->auto_sanitize = $auto_sanitize;
 		$this->flood_control = $flood_control;
+		$this->error_handler = $error_handler;
+		
+		if($this->error_handler){
+			$callback = array($this , 'error_handler');
+			set_error_handler($callback);
+
+			$callback = array($this , 'exception_handler');
+			set_exception_handler($callback);
+		}
+		
+		$callback = array($this , '__destruct');
+		register_shutdown_function($callback); //use this because object constructors won't work in fatal errors
 		
 		if(is_array($emails)){
 			$this->emails = $emails;
@@ -108,8 +122,36 @@ class Watchy{
 		}
 	}
 	
-	public function log($log){
+	public function error_handler($errno , $errstr , $errfile , $errline , $errcontext ){ //beuatify this
+		$log = 'Error Number: '.$errno.' String '.$errstr.' - '.$errfile.' - '.$errline.' - '.$errcontext;
+		$this->log($log , 'PHP ERROR' , true);
+
+		return null;
+	}
+	
+	public function exception_handler($e){ //beuatify this
+		$this->log($e , 'PHP Exception' , true);
+
+		return null;
+	}
+	
+	public function log($log , $title = null , $alert = false){
 		if($this->dispatch == WATCHY_DATABASE || $this->dispatch == WATCHY_BOTH){
+		
+			$log = '<pre>'.$log.'</pre>';
+			
+			if($alert){
+				$d = debug_backtrace();
+				
+				$trace = '';
+				unset($d[0]);
+				foreach($d as $jump){
+					$trace .= $jump['file'].' ('.$jump['line'].'): '.$title.'<br />';
+				}
+				
+				$log .= '<br /><strong>TRACE:</strong><br />'.$trace;
+			}
+		
 			$sql = sprintf("INSERT INTO watchy (id , log , created ) VALUES ( NULL, '%s' , CURRENT_TIMESTAMP);", @mysql_real_escape_string(print_r($log,TRUE)));
 			
 			$result = @mysql_query($sql);
@@ -119,20 +161,16 @@ class Watchy{
 			}
 		}
 		
-		if($this->dispatch == WATCHY_EMAIL || $this->dispatch == WATCHY_BOTH){
+		if($this->dispatch == WATCHY_EMAIL || $this->dispatch == WATCHY_BOTH || $alert == true){
 			$this->email(print_r($log,TRUE));
 		}
 
 		return $log;
 	}
 	
-	public function alert($alert){
+	public function alert($alert , $title = null){
 		
-		$this->log($alert);
-		
-		if($this->dispatch == WATCHY_DATABASE){
-			$this->email($alert);
-		}
+		$this->log($alert , $title , true);
 	}
 	
 	public function query(){
@@ -180,7 +218,7 @@ class Watchy{
 	
 	public function email($content){
 		if($this->flood_control == 0 || $this->flood < $this->flood_control){
-			$this->email_content .= '<pre>'.$content.'</pre>';
+			$this->email_content .= $content;
 			$this->email_content .= "<br /><br /><hr /><br /><br />";
 			$this->flood++;
 		}
@@ -215,15 +253,20 @@ class Watchy{
 	}
 		
 	function __destruct(){
-		if($this->log_queries){
-			if($this->queries != NULL){
-				$this->log($this->queries);
+		if($this->destroy == false){
+			if($this->log_queries){
+				if($this->queries != NULL){
+					$this->log($this->queries);
+				}
 			}
+		
+			if($this->email_content != ''){
+				$this->send_email();
+			}
+		}else{
+			$destroy = true;
 		}
 		
-		if($this->email_content != ''){
-			$this->send_email();
-		}
 	}
 
 }
