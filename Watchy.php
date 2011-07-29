@@ -1,4 +1,4 @@
-<?php define('WATCHY_VERSION', '1.9 Dev 1');
+<?php define('WATCHY_VERSION', '1.9 Dev 2');
 /*
 
 	A Basic Watchdog for PHP Development.
@@ -138,7 +138,7 @@ class Watchy{
 	public function log($log , $title = null , $alert = false){
 		if($this->dispatch == WATCHY_DATABASE || $this->dispatch == WATCHY_BOTH){
 		
-			$log = '<pre>'.$log.'</pre>';
+			$log = '<pre>'.var_export($log,true).'</pre>';
 			
 			if($alert){
 				$d = debug_backtrace();
@@ -254,6 +254,7 @@ class Watchy{
 		
 	function __destruct(){
 		if($this->destroy == false){
+			$this->destroy = true;
 			if($this->log_queries){
 				if($this->queries != NULL){
 					$this->log($this->queries);
@@ -263,10 +264,6 @@ class Watchy{
 			if($this->email_content != ''){
 				$this->send_email();
 			}
-		}else{
-			$destroy = true;
 		}
-		
 	}
-
 }
