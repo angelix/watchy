@@ -209,7 +209,7 @@ class Watchy{
 	}
 	
 	public function sanitize($value){
-		return mysql_real_escape_string($value);
+		return mysql_real_escape_string(htmlspecialchars($value));
 	}
 	
 	public function s($value){
