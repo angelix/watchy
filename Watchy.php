@@ -147,7 +147,8 @@ class Watchy{
 				unset($d[0]);
 				foreach($d as $jump){
 					$file = isset($jump['file']) ? $jump['file'] : 'unknown';
-					$trace .= $file.' ('.$jump['line'].'): '.$title.'<br />';
+					$line = isset($jump['line']) ? $jump['line'] : 'unknown';
+					$trace .= $file.' ('.$line.'): '.$title.'<br />';
 				}
 				
 				$log .= '<br /><strong>TRACE:</strong><br />'.$trace;
