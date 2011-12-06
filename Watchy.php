@@ -1,4 +1,4 @@
-<?php define('WATCHY_VERSION', '1.9 Dev 2');
+<?php define('WATCHY_VERSION', '1.9.1 - Beta');
 /*
 
 	A Basic Watchdog for PHP Development.
@@ -95,7 +95,7 @@ class Watchy{
 	protected $error_handler = true;
 	protected $destroy = false;
 	
-	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $error_handler = true, $dispatch = WATCHY_BOTH , $log_queries = false , $auto_sanitize = true , $flood_control = 10){
+	function __construct($name = 'Watchy' , $emails = array() , $from_email = 'OgilvyLabs <ogilvit@gmail.com>', $error_handler = true, $dispatch = WATCHY_BOTH , $log_queries = false , $auto_sanitize = true , $flood_control = 20){
 		$this->project = $name;
 		$this->dispatch = $dispatch;
 		$this->log_queries = $log_queries;
@@ -211,7 +211,7 @@ class Watchy{
 	}
 	
 	public function sanitize($value){
-		return mysql_real_escape_string(htmlspecialchars($value));
+		return mysql_real_escape_string($value);
 	}
 	
 	public function s($value){
@@ -248,6 +248,11 @@ class Watchy{
 		if($content == NULL){
 			$content = $this->email_content;
 		}
+
+		$content .= "\n --- SERVER INFO --- \n";
+		$content .= '<pre>';
+		$content .= print_r($_SERVER , true);
+		$content .= '</pre>';
 		
 		foreach($this->emails as $email){
 			@mail($email , $subject , $content , $headers);
